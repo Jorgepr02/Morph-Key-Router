@@ -1,0 +1,38 @@
+{
+  "name": "morph-key-router",
+  "version": "0.1.0",
+  "description": "Local Morph API key router, originally made for OpenCode.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "bin": {
+    "morph-key-router": "./src/cli.ts"
+  },
+  "files": [
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "bun test"
+  },
+  "keywords": [
+    "opencode",
+    "morph",
+    "morphllm",
+    "api-key-rotation",
+    "openai-compatible",
+    "plugin"
+  ],
+  "author": "morph-key-router contributors",
+  "license": "MIT",
+  "peerDependencies": {
+    "@opencode-ai/plugin": ">=1.4.0"
+  },
+  "devDependencies": {
+    "@opencode-ai/plugin": "^1.4.7",
+    "@types/bun": "latest",
+    "typescript": "^5.9.3"
+  }
+}
