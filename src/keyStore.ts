@@ -1,4 +1,4 @@
-import { chmod, mkdir } from "node:fs/promises"
+import { chmod, copyFile, mkdir, rename } from "node:fs/promises"
 import { dirname, join } from "node:path"
 
 import type { KeyRuntimeState, RouterConfig, RouterStrategy, StoredKey } from "./types"
@@ -86,6 +86,41 @@ function cloneMetrics(metrics: KeyRuntimeState): KeyRuntimeState {
   return { ...metrics }
 }
 
+function getBackupPath(configPath: string): string {
+  const timestamp = new Date().toISOString().replaceAll(":", "-").replaceAll(".", "-")
+  return `${configPath}.backup-${timestamp}`
+}
+
+async function readConfigFile(configPath: string): Promise<RouterConfig | null> {
+  const file = Bun.file(configPath)
+  if (!(await file.exists())) {
+    return null
+  }
+
+  try {
+    return normalizeConfig(JSON.parse(await file.text()) as unknown)
+  } catch {
+    return null
+  }
+}
+
+function preserveDiskKeys(config: RouterConfig, diskConfig: RouterConfig | null): RouterConfig {
+  if (!diskConfig) {
+    return config
+  }
+
+  const currentIds = new Set(config.keys.map((key) => key.id))
+  const missingKeys = diskConfig.keys.filter((key) => !currentIds.has(key.id))
+  if (missingKeys.length === 0) {
+    return config
+  }
+
+  return {
+    ...config,
+    keys: [...config.keys, ...missingKeys],
+  }
+}
+
 export class KeyStore {
   private config: RouterConfig = createDefaultConfig()
 
@@ -108,14 +143,25 @@ export class KeyStore {
     }
 
     this.config = createDefaultConfig()
-    await this.save()
+    await this.save({ allowKeyRemoval: true })
     return this.config
   }
 
-  async save(): Promise<void> {
+  async save(options: { allowKeyRemoval?: boolean; backup?: boolean } = {}): Promise<void> {
     await mkdir(dirname(this.configPath), { recursive: true })
-    await Bun.write(this.configPath, `${JSON.stringify(this.config, null, 2)}\n`)
-    await chmod(this.configPath, 0o600)
+
+    const diskConfig = await readConfigFile(this.configPath)
+    const file = Bun.file(this.configPath)
+    if (options.backup !== false && await file.exists()) {
+      await copyFile(this.configPath, getBackupPath(this.configPath))
+    }
+
+    const config = options.allowKeyRemoval ? this.config : preserveDiskKeys(this.config, diskConfig)
+    const tempPath = `${this.configPath}.${process.pid}.${crypto.randomUUID()}.tmp`
+    await Bun.write(tempPath, `${JSON.stringify(config, null, 2)}\n`)
+    await chmod(tempPath, 0o600)
+    await rename(tempPath, this.configPath)
+    this.config = config
   }
 
   async addKey(name: string, key: string): Promise<StoredKey> {
@@ -160,7 +206,7 @@ export class KeyStore {
     this.config.keys = this.config.keys.filter((key) => key.id !== id)
     const deleted = this.config.keys.length !== initialLength
     if (deleted) {
-      await this.save()
+      await this.save({ allowKeyRemoval: true })
     }
 
     return deleted
@@ -173,7 +219,7 @@ export class KeyStore {
     }
 
     key.metrics = cloneMetrics(metrics)
-    await this.save()
+    await this.save({ backup: false })
   }
 
   async updateSettings(settings: {
