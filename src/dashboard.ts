@@ -53,19 +53,41 @@ export function renderDashboard(): string {
     }
     h2 { margin: 0 0 18px; font-size: 15px; color: var(--acid); text-transform: uppercase; }
     label { display: block; margin: 14px 0 7px; color: var(--muted); font-size: 12px; }
-    input, select {
+    input {
       width: 100%; padding: 14px 15px; border-radius: 12px; border: 1px solid var(--line);
       background: #080b09; color: var(--text); font: inherit; outline: none;
     }
-    select {
-      appearance: none;
-      padding-right: 44px;
-      background-color: #080b09;
-      background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="8" viewBox="0 0 12 8"><path fill="%239aa895" d="M1.4.7 6 5.3 10.6.7 12 2.1l-6 6-6-6z"/></svg>');
-      background-repeat: no-repeat;
-      background-position: right 18px center;
+    input:focus { border-color: var(--acid); box-shadow: 0 0 0 3px rgba(199,255,66,0.12); }
+    .select { position: relative; }
+    .select-trigger {
+      width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 14px 15px; border-radius: 12px; border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(16,21,18,0.96), rgba(8,11,9,0.96));
+      color: var(--text); font-weight: 700; text-align: left;
     }
-    input:focus, select:focus { border-color: var(--acid); box-shadow: 0 0 0 3px rgba(199,255,66,0.12); }
+    .select-trigger::after {
+      content: ""; width: 10px; height: 10px; flex: 0 0 auto; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted);
+      transform: translateY(-2px) rotate(45deg); transition: transform 0.15s ease, border-color 0.15s ease;
+    }
+    .select.open .select-trigger, .select-trigger:focus { border-color: var(--acid); box-shadow: 0 0 0 3px rgba(199,255,66,0.12); }
+    .select.open .select-trigger::after { border-color: var(--acid); transform: translateY(2px) rotate(225deg); }
+    .select-menu {
+      position: absolute; z-index: 12; top: calc(100% + 8px); left: 0; right: 0; overflow: hidden;
+      border: 1px solid var(--line); border-radius: 16px;
+      background: linear-gradient(180deg, rgba(22,31,26,0.99), rgba(8,11,9,0.99));
+      box-shadow: 0 20px 60px rgba(0,0,0,0.42), 0 0 0 1px rgba(199,255,66,0.05) inset;
+      opacity: 0; pointer-events: none; transform: translateY(-6px) scale(0.98); transform-origin: top;
+      transition: opacity 0.14s ease, transform 0.14s ease;
+    }
+    .select.open .select-menu { opacity: 1; pointer-events: auto; transform: translateY(0) scale(1); }
+    .select-option {
+      width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      padding: 12px 14px; border: 0; border-radius: 0; background: transparent; color: var(--text);
+      font-weight: 700; text-align: left;
+    }
+    .select-option:hover, .select-option:focus { background: rgba(199,255,66,0.09); color: var(--acid); outline: none; }
+    .select-option[aria-selected="true"] { color: var(--acid); background: rgba(84,243,166,0.08); }
+    .select-option[aria-selected="true"]::after { content: "active"; color: var(--mint); font-size: 11px; font-weight: 800; text-transform: uppercase; }
     button {
       border: 0; border-radius: 6px; padding: 10px 14px; background: var(--acid);
       color: #101400; font-weight: 800; cursor: pointer; font: inherit;
@@ -110,6 +132,32 @@ export function renderDashboard(): string {
     .toast.show { transform: translate(-50%, 0); opacity: 1; pointer-events: auto; }
     .toast.success { border-color: rgba(84,243,166,0.5); }
     .toast.error { border-color: rgba(255,93,115,0.58); color: #ffd8de; }
+    .modal-backdrop {
+      position: fixed; inset: 0; z-index: 30; display: grid; place-items: center;
+      padding: 20px; background: rgba(3, 5, 4, 0.72); backdrop-filter: blur(12px);
+      opacity: 0; pointer-events: none; transition: opacity 0.16s ease;
+    }
+    .modal-backdrop.open { opacity: 1; pointer-events: auto; }
+    .modal {
+      width: min(460px, 100%); overflow: hidden; border: 1px solid rgba(255,93,115,0.45);
+      border-radius: 22px; background: linear-gradient(180deg, rgba(22,31,26,0.98), rgba(8,11,9,0.98));
+      box-shadow: 0 32px 100px rgba(0,0,0,0.62), 0 0 0 1px rgba(199,255,66,0.06) inset;
+      transform: translateY(12px) scale(0.98); transition: transform 0.16s ease;
+    }
+    .modal-backdrop.open .modal { transform: translateY(0) scale(1); }
+    .modal-accent { height: 4px; background: linear-gradient(90deg, var(--bad), var(--warn), var(--acid)); }
+    .modal-body { padding: 22px; }
+    .modal-kicker { color: var(--bad); font-size: 12px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+    .modal h2 { margin: 8px 0 10px; color: var(--text); font-size: 22px; letter-spacing: -0.02em; text-transform: none; }
+    .modal p { margin: 0; color: var(--muted); line-height: 1.55; }
+    .modal-key {
+      display: inline-flex; max-width: 100%; margin-top: 14px; padding: 7px 10px; border: 1px solid var(--line);
+      border-radius: 999px; background: rgba(8,11,9,0.72); color: var(--acid); font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; padding: 0 22px 22px; }
+    .modal-actions button { min-width: 112px; }
+    button.danger-strong { background: var(--bad); color: #1b0509; border: 1px solid rgba(255,93,115,0.88); }
     code { color: var(--acid); }
 
     @media (max-width: 1120px) {
@@ -123,6 +171,21 @@ export function renderDashboard(): string {
 </head>
 <body>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <div id="deleteModal" class="modal-backdrop" role="presentation" aria-hidden="true">
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="deleteModalTitle" aria-describedby="deleteModalDescription">
+      <div class="modal-accent"></div>
+      <div class="modal-body">
+        <div class="modal-kicker">Destructive action</div>
+        <h2 id="deleteModalTitle">Delete this API key?</h2>
+        <p id="deleteModalDescription">This removes the key from the local router config. Backups may exist on disk, but the dashboard cannot undo this action.</p>
+        <span id="deleteModalKey" class="modal-key"></span>
+      </div>
+      <div class="modal-actions">
+        <button id="deleteCancel" class="secondary" type="button">Cancel</button>
+        <button id="deleteConfirm" class="danger-strong" type="button">Delete key</button>
+      </div>
+    </section>
+  </div>
   <main>
     <header>
       <div>
@@ -148,12 +211,16 @@ export function renderDashboard(): string {
 
         <hr style="border:0;border-top:1px solid var(--line);margin:20px 0" />
         <h2>Routing</h2>
-        <label for="strategy">Strategy</label>
-        <select id="strategy">
-          <option value="round-robin">round-robin</option>
-          <option value="least-used">least-used</option>
-          <option value="healthy-first">healthy-first</option>
-        </select>
+        <label for="strategyTrigger">Strategy</label>
+        <input id="strategy" type="hidden" value="round-robin" />
+        <div id="strategySelect" class="select">
+          <button id="strategyTrigger" class="select-trigger" type="button" aria-haspopup="listbox" aria-expanded="false">round-robin</button>
+          <div id="strategyMenu" class="select-menu" role="listbox" aria-labelledby="strategyTrigger">
+            <button class="select-option" type="button" role="option" data-value="round-robin" aria-selected="true">round-robin</button>
+            <button class="select-option" type="button" role="option" data-value="least-used" aria-selected="false">least-used</button>
+            <button class="select-option" type="button" role="option" data-value="healthy-first" aria-selected="false">healthy-first</button>
+          </div>
+        </div>
         <p class="notice">Default: <code>round-robin</code>. Sends each request to the next active key.</p>
         <label for="cooldown">429 cooldown (ms)</label>
         <input id="cooldown" type="number" min="1000" step="1000" value="60000" placeholder="60000" />
@@ -172,6 +239,7 @@ export function renderDashboard(): string {
     const $ = (id) => document.getElementById(id);
     let state = null;
     let toastTimer = null;
+    let pendingDeleteId = null;
 
     function showToast(message, type) {
       const toast = $('toast');
@@ -215,8 +283,30 @@ export function renderDashboard(): string {
       return '<div class="metric"><span>' + label + '</span><strong>' + value + '</strong></div>';
     }
 
+    function setStrategy(value) {
+      $('strategy').value = value;
+      $('strategyTrigger').textContent = value;
+      document.querySelectorAll('.select-option').forEach((option) => {
+        option.setAttribute('aria-selected', option.dataset.value === value ? 'true' : 'false');
+      });
+    }
+
+    function closeStrategyMenu() {
+      $('strategySelect').classList.remove('open');
+      $('strategyTrigger').setAttribute('aria-expanded', 'false');
+    }
+
+    function toggleStrategyMenu() {
+      const isOpen = $('strategySelect').classList.toggle('open');
+      $('strategyTrigger').setAttribute('aria-expanded', String(isOpen));
+      if (isOpen) {
+        const selected = document.querySelector('.select-option[aria-selected="true"]');
+        if (selected instanceof HTMLButtonElement) selected.focus();
+      }
+    }
+
     function render() {
-      $('strategy').value = state.config.strategy;
+      setStrategy(state.config.strategy);
       $('cooldown').value = state.config.cooldownMs;
       $('proxyUrl').textContent = state.proxyUrl;
       $('summary').innerHTML = [
@@ -295,7 +385,26 @@ export function renderDashboard(): string {
       }
     }
 
-    async function deleteKey(id) {
+    function openDeleteModal(id) {
+      const key = state?.keys.find((item) => item.id === id);
+      pendingDeleteId = id;
+      $('deleteModalKey').textContent = key ? key.name + ' - ' + key.maskedKey : 'Selected key';
+      $('deleteModal').classList.add('open');
+      $('deleteModal').setAttribute('aria-hidden', 'false');
+      $('deleteConfirm').focus();
+    }
+
+    function closeDeleteModal() {
+      pendingDeleteId = null;
+      $('deleteModal').classList.remove('open');
+      $('deleteModal').setAttribute('aria-hidden', 'true');
+    }
+
+    async function deleteKey() {
+      if (!pendingDeleteId) return;
+      const id = pendingDeleteId;
+      closeDeleteModal();
+
       try {
         await api('/api/keys/' + id, { method: 'DELETE' });
         await load();
@@ -324,6 +433,26 @@ export function renderDashboard(): string {
     $('add').addEventListener('click', addKey);
     $('refresh').addEventListener('click', load);
     $('save').addEventListener('click', saveSettings);
+    $('strategyTrigger').addEventListener('click', toggleStrategyMenu);
+    $('strategyMenu').addEventListener('click', (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLButtonElement) || !target.classList.contains('select-option')) return;
+      setStrategy(target.dataset.value);
+      closeStrategyMenu();
+      $('strategyTrigger').focus();
+    });
+    document.addEventListener('click', (event) => {
+      if (!$('strategySelect').contains(event.target)) closeStrategyMenu();
+    });
+    $('deleteCancel').addEventListener('click', closeDeleteModal);
+    $('deleteConfirm').addEventListener('click', deleteKey);
+    $('deleteModal').addEventListener('click', (event) => {
+      if (event.target === $('deleteModal')) closeDeleteModal();
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && $('deleteModal').classList.contains('open')) closeDeleteModal();
+      if (event.key === 'Escape') closeStrategyMenu();
+    });
     $('keys').addEventListener('change', (event) => {
       const target = event.target;
       if (!(target instanceof HTMLInputElement) || !target.classList.contains('key-toggle')) return;
@@ -332,7 +461,7 @@ export function renderDashboard(): string {
     $('keys').addEventListener('click', (event) => {
       const target = event.target;
       if (!(target instanceof HTMLButtonElement) || !target.classList.contains('key-delete')) return;
-      deleteKey(target.dataset.keyId);
+      openDeleteModal(target.dataset.keyId);
     });
     load();
     setInterval(load, 5000);
